@@ -1,16 +1,16 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <Adafruit_ADS1X15.h>
 
-// Analog pin (A0)
-const int analogPin = 32;  // Using GPIO32 as analog input
+Adafruit_ADS1115 ads;
 
 // WiFi
 // Home
 // const char *ssid = "353-1Atwood";
 // const char *password = "Natezacdan1";
 // Hotspot
-const char *ssid = "Daniel's iPhone (5)";
-const char *password = "maya12345";
+const char* ssid = "Daniel’s iPhone (5)";
+const char* password = "maya12345";
 
 // MQTT Broker
 // Home
@@ -32,8 +32,10 @@ void setup() {
     // Set software serial baud to 115200
     Serial.begin(115200);
     
-    // Configure ADC
-    analogReadResolution(16);  // Set ADC resolution to 16 bits
+    if (!ads.begin()) {
+      Serial.println("Failed to initialize ADS.");
+      while (1);
+    }
     
     // Connecting to a WiFi network
     WiFi.begin(ssid, password);
@@ -82,15 +84,22 @@ float convertToVoltage(int16_t rawReading) {
 void loop() {
     client.loop();
     
-    // Read the raw ADC value from the analog pin
-    int16_t adcRawValue = analogRead(analogPin);
-    
-    // Convert the raw reading to voltage
-    float voltage = convertToVoltage(adcRawValue);
+    int16_t adc0;
+    float volts0;
+
+    adc0 = ads.readADC_SingleEnded(0);
+    // adc1 = ads.readADC_SingleEnded(1);
+    // adc2 = ads.readADC_SingleEnded(2);
+    // adc3 = ads.readADC_SingleEnded(3);
+
+    volts0 = ads.computeVolts(adc0);
+    // volts1 = ads.computeVolts(adc1);
+    // volts2 = ads.computeVolts(adc2);
+    // volts3 = ads.computeVolts(adc3);
     
     // Convert the voltage value to a string
     char voltageStr[8];
-    dtostrf(voltage, 1, 2, voltageStr);
+    dtostrf(volts0, 1, 2, voltageStr);
     
     // Publish the voltage value to the MQTT broker
     client.publish(topic, voltageStr);
